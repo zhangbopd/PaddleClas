@@ -69,7 +69,7 @@ DataLoader:
       name: DistributedBatchSampler
       batch_size: 64
       drop_last: False
-      shuffle: True
+      shuffle: False
     loader:
       num_workers: 4
       use_shared_memory: True

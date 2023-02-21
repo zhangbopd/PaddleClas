@@ -17,14 +17,49 @@ import time
 import paddle
 from ppcls.engine.train.utils import update_loss, update_metric, log_info
 from ppcls.utils import profiler
+# FIXME: For Time-only profile
+import paddle.profiler as pro
+
+# FIXME: For nsys Timeline profile
+# import paddle.fluid.core as core
+# nsys profile --stats true -w true -t cuda,nvtx,osrt,cudnn,cublas -s cpu --capture-range=cudaProfilerApi -x true --force-overwrite true -o ${output_filename}
+# python train.py ..
 
 
 def train_epoch(engine, epoch_id, print_batch_step):
     tic = time.time()
+    # FIXME: For Time-only profile
+    if epoch_id is 1:
+        # p = pro.Profiler(timer_only=True)
+        p = pro.Profiler(
+            targets=[pro.ProfilerTarget.CPU, pro.ProfilerTarget.GPU],
+            scheduler=[10, 20],
+            timer_only=False)
+        p.start()
+
     for iter_id, batch in enumerate(engine.train_dataloader):
         if iter_id >= engine.max_iter:
             break
-        profiler.add_profiler_step(engine.config["profiler_options"])
+        # FIXME: Model default profiler
+        # profiler.add_profiler_step(engine.config["profiler_options"])
+        # FIXME: For nsys Timeline profile
+        # if i == 10:
+        #     core.nvprof_start()
+        #     core.nvprof_enable_record_event()
+        #     core.nvprof_nvtx_push(str(i))
+        # if i == 20:
+        #     core.nvprof_nvtx_pop()
+        #     core.nvprof_stop()
+        #     sys.exit()
+        # if i > 100 and i < 110:
+        #     core.nvprof_nvtx_pop()
+        #     core.nvprof_nvtx_push(str(i))
+
+        # FIXME: For OP-details profile
+        # if i == 0:
+        #     paddle.fluid.profiler.start_profiler("GPU", "Default")
+        # if i == 100:
+        #     paddle.fluid.profiler.stop_profiler("total", "video.profile")
         if iter_id == 5:
             for key in engine.time_info:
                 engine.time_info[key].reset()
@@ -90,6 +125,14 @@ def train_epoch(engine, epoch_id, print_batch_step):
         if iter_id % print_batch_step == 0:
             log_info(engine, batch_size, epoch_id, iter_id)
         tic = time.time()
+        # FIXME: For Time-only profile
+        p.step(num_samples=32)
+
+    # FIXME: For Time-only profile
+    if epoch_id is 1:
+        p.stop()
+        p.summary()
+        sys.exit()
 
     # step lr(by epoch)
     for i in range(len(engine.lr_sch)):
